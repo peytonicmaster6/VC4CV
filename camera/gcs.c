@@ -91,7 +91,7 @@ GCS *gcs_create(GCS_CameraParams *cameraParams)
 
 	// Mess with the ISP blocks
 	// https://www.raspberrypi.org/forums/viewtopic.php?f=43&t=175711
-	mmal_port_parameter_set_uint32(gcs->camera->control, MMAL_PARAMETER_CAMERA_ISP_BLOCK_OVERRIDE, ~cameraParams->disableISPBlocks);
+	//mmal_port_parameter_set_uint32(gcs->camera->control, MMAL_PARAMETER_CAMERA_ISP_BLOCK_OVERRIDE, ~cameraParams->disableISPBlocks);
 
 	// Enable MMAL camera component
 	mstatus = mmal_component_enable(gcs->camera);
@@ -102,7 +102,7 @@ GCS *gcs_create(GCS_CameraParams *cameraParams)
 		mmal_port_parameter_set_uint32(gcs->camera->control, MMAL_PARAMETER_SHUTTER_SPEED, gcs->cameraParams.shutterSpeed);
 	if (gcs->cameraParams.iso != 0)
 		mmal_port_parameter_set_uint32(gcs->camera->control, MMAL_PARAMETER_ISO, (uint32_t)gcs->cameraParams.iso);
-	if (gcs->cameraParams.disableEXP)
+	/*if (gcs->cameraParams.disableEXP)
 	{ // Fix Exposure to set ISO value
 		MMAL_PARAMETER_EXPOSUREMODE_T expMode;
 		expMode.hdr.id = MMAL_PARAMETER_EXPOSURE_MODE;
@@ -119,7 +119,7 @@ GCS *gcs_create(GCS_CameraParams *cameraParams)
 		mmal_port_parameter_set(gcs->camera->control, &awbMode.hdr);
 		MMAL_PARAMETER_AWB_GAINS_T awbGains = { { MMAL_PARAMETER_CUSTOM_AWB_GAINS, sizeof(awbGains) }, { 1, 1 }, { 1, 1 }};
 		mmal_port_parameter_set(gcs->camera->control, &awbGains.hdr);
-	}
+	}*/
 	// Enable MMAL camera port
 	gcs->camera->control->userdata = (struct MMAL_PORT_USERDATA_T *)gcs;
 	mstatus = mmal_port_enable(gcs->camera->control, gcs_onCameraControl);
