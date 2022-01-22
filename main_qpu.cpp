@@ -22,9 +22,9 @@
 #define BLKMSK 2		// Special 1Bit buffer in 8x32 block layout
 #define BILMSK 3		// Special 1Bit buffer in 8x32 block layout, interleaved
 
-//#define RUN_CAMERA	// Have the camera supply frames
+#define RUN_CAMERA	// Have the camera supply frames
 			// EITHER use emulated buffers with debug content (default)
-//#define USE_CAMERA	// OR use camera frames directly in QPU program
+#define USE_CAMERA	// OR use camera frames directly in QPU program
 //#define CPY_CAMERA	// OR copy copy frames into emulated buffers
 
 struct termios terminalSettings;
