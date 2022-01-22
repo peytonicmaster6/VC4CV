@@ -7,6 +7,10 @@ cd build
 cmake ..
 ```
 
+Go into /boot/config.txt and comment out any of these lines to enable the legacy driver:
+```
+dtoverlay=vc4-fkms-v3d
+```
 NOTE: Terminate all examples with Q (soft) or Ctrl-C (hard)
 
 ### GL examples
