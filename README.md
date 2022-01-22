@@ -3,6 +3,10 @@ VideoCore IV Computer Vision framework and examples - GL- and QPU-based
 
 This repository aims to make low-level CV on the RaspberryPis /w VideoCore IV (e.g. Zero) more accessible by providing examples and a slim framework to build on. It only covers real-time camera frame processing using both OpenGL shaders and QPU assembly programs.
 
+Modified code to get the GPU and QPU programs working out of the box on kernel 5.10.63-v7+ (Raspbian Buster), as well as adding in barrel distortion shaders (hopefully).
+
+To get the programs to work, the legacy driver must be enabled. Go to /boot/config.txt and comment out any lines containing dtoverlay=vc4-fkms-v3d.
+
 ### For whom is this?
 If you need time-critical CV tasks but are limited to the RaspberryPi Zero, you might want to go the extra mile and do as much of your CV pipeline as you can on the hardware, the VideoCore IV. This is only really a good choice if you need better performance than what OpenCV offers you, at all costs. If you don't have space, power or cost limitations, a more powerful RasperryPi or a Tinkerboard is probably way easier and better.
 
