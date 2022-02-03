@@ -42,7 +42,7 @@ class Mesh
 	std::vector<VertexType> packing;
 	unsigned int FpV, vertexCount, elementCount;
 
-	Mesh(const std::vector<VertexType> Packing, const std::vector<float> Vertices, const std::vector<unsigned int> Elements);
+	Mesh(const std::vector<VertexType> Packing, const std::vector<float> Vertices, const std::vector<unsigned short> Elements);
 	~Mesh(void);
 	void draw(void);
 	void setMode(GLenum mode);
