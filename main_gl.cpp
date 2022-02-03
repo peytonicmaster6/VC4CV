@@ -102,9 +102,9 @@ int main(int argc, char **argv)
 	
         std::vector<float> vertices; 
         std::vector<unsigned short> indices;
-    
-	float N = 100;
-        float z = 0;
+        
+	float N = 100;    //create an NxN grid of triangles (NxNx2 Triangles produced)
+        float z = 0;      //empty z component for the POS vector
     
         for (float x = -1, a = 0; x <= 1, a <= 1; x+= 2/N, a += 1/N)
         {
