@@ -99,7 +99,57 @@ int main(int argc, char **argv)
 	glClearColor(0.8f, 0.2f, 0.1f, 1.0f);
 
 	// ---- Setup GL Resources ----
-
+	
+        std::vector<float> vertices; 
+        std::vector<unsigned short> indices;
+    
+	float N = 100;
+        float z = 0;
+    
+        for (float x = -1, a = 0; x <= 1, a <= 1; x+= 2/N, a += 1/N)
+        {
+            for (float y = -1, b = 0; y <= 1, b <= 1; y+= 2/N, b+= 1/N)
+            {
+	    	vertices.push_back((float)(x));
+		vertices.push_back((float)(y));
+		vertices.push_back((float)(z));
+		vertices.push_back((float)(a));
+		vertices.push_back((float)(b));
+            }
+        
+        }
+	 
+        for (int x = 0; x < N; x++)
+        {
+            for (int z = 0; z < N; z++)
+            {
+	        int offset = x * (N+1) + z;
+                indices.push_back((short)(offset+0));
+                indices.push_back((short)(offset+1));
+            	indices.push_back((short)(offset+ (N+1) + 1));
+            	indices.push_back((short)(offset+0));
+            	indices.push_back((short)(offset+ (N+1)));
+            	indices.push_back((short)(offset+ (N+1) + 1));
+        	}
+    	}
+    
+    	//Debugging info, will print out the indices, vertices, and how many of each there are
+    
+    	//unsigned int indicesCount = indices.size();
+    	//unsigned int verticesCount = vertices.size();
+        
+    	//for (auto i: indices)
+		//std::cout << i << ' ';
+    
+    	//for (auto i: vertices)
+		//std::cout << i << ' ';
+		
+	//std::cout << '\n' << verticesCount << '\n';
+	//std::cout << '\n' << indicesCount << '\n';
+	
+	SSQuad = new Mesh ({ POS, TEX }, vertices, indices);
+	
+        /*//Original Mesh
 	// Create screen-space quad for rendering
 	SSQuad = new Mesh ({ POS, TEX }, {
 		-1,  1, 0, 0, 1,
@@ -108,7 +158,7 @@ int main(int argc, char **argv)
 		 1,  1, 0, 1, 1,
 		 1, -1, 0, 1, 0,
 		-1, -1, 0, 0, 0,
-	}, {});
+	}, {});*/
 
 	// Load shaders
 	shaderCamBlitRGB = new ShaderProgram("../gl_shaders/CamES/vert.glsl", "../gl_shaders/CamES/frag_camRGB.glsl");
