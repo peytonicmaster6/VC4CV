@@ -5,7 +5,7 @@
 #include <math.h>
 #include <iostream>
 
-Mesh::Mesh(const std::vector<VertexType> Packing, const std::vector<float> Vertices, const std::vector<unsigned int> Elements)
+Mesh::Mesh(const std::vector<VertexType> Packing, const std::vector<float> Vertices, const std::vector<unsigned short> Elements)
 {
 	// Calculate Floats per vertex as specified by packing
 	packing = Packing;
@@ -29,7 +29,7 @@ Mesh::Mesh(const std::vector<VertexType> Packing, const std::vector<float> Verti
 	{
 		glGenBuffers(1, &EBO_ID);
 		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO_ID);
-		glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(unsigned int) * elementCount, &Elements[0], GL_STATIC_DRAW);
+		glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(unsigned short) * elementCount, &Elements[0], GL_STATIC_DRAW);
 		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 	}
 
@@ -69,7 +69,7 @@ void Mesh::draw(void)
 	if (EBO_ID == 0)
 		glDrawArrays(mode, 0, vertexCount);
 	else
-		glDrawElements(mode, elementCount, GL_UNSIGNED_INT, 0);
+		glDrawElements(mode, elementCount, GL_UNSIGNED_SHORT, 0);
 
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
