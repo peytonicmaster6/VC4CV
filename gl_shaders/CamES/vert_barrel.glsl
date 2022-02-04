@@ -5,25 +5,22 @@ attribute vec2 vTex;
 
 varying vec2 uv;
 
-vec2 Distort(vec2 p)
+vec3 Distort(vec3 p)
 {
-    float r = length(p);
+    vec3 v = p.xyz;
+    float r = length(v);
     if (r > 0.0)
     {
         float theta = atan(p.y,p.x);
-        r = pow(r, 1.5);
-        p.x = r * cos(theta);
-        p.y = r * sin(theta);
+        r = r - 0.15*pow(r, 3.0) + 0.01*pow(r, 5.0);
+        v.x = r * cos(theta);
+        v.y = r * sin(theta);
     }
-    return 0.5*(p+1.0);
+    return v;
 }
 
 void main()
 {
-    gl_Position = vec4(vPos, 1.0); //second value is zoom 
-
+    gl_Position = vec4(Distort(vPos), 1.0); //second value is zoom 
     uv = vTex;
-    //Apply barrel distortion
-    uv = uv*2.0 - 1.0;
-    uv = Distort(uv);
 }
