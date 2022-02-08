@@ -102,6 +102,28 @@ GCS *gcs_create(GCS_CameraParams *cameraParams)
 		mmal_port_parameter_set_uint32(gcs->camera->control, MMAL_PARAMETER_SHUTTER_SPEED, gcs->cameraParams.shutterSpeed);
 	if (gcs->cameraParams.iso != 0)
 		mmal_port_parameter_set_uint32(gcs->camera->control, MMAL_PARAMETER_ISO, (uint32_t)gcs->cameraParams.iso);
+	
+        //Control the brightness	
+	MMAL_RATIONAL_T value = {60, 100};                //default value is 50
+	mmal_port_parameter_set_rational(gcs->camera->control, MMAL_PARAMETER_BRIGHTNESS, value);	
+	
+	// Set camera number (not working, doesn't actually do anything to which camera is selected)
+	MMAL_PARAMETER_INT32_T camera_num = {{MMAL_PARAMETER_CAMERA_NUM, sizeof(camera_num)}, 1}; //should select camera 2
+        mmal_port_parameter_set(gcs->camera->control, &camera_num.hdr);
+	
+	/*
+	//Set up stereo mode (works I think, but need to fix the encoding issue, get a 0x505 error code when changing encoding to I420 from OPAQUE)
+        MMAL_PARAMETER_STEREOSCOPIC_MODE_T stereo = { {MMAL_PARAMETER_STEREOSCOPIC_MODE, sizeof(stereo)},MMAL_STEREOSCOPIC_MODE_SIDE_BY_SIDE, MMAL_TRUE, MMAL_FALSE};
+        mmal_port_parameter_set(gcs->camera->control, &stereo.hdr);
+	
+	//Set up text annotation (still a work in progess)
+    	const char *string;
+    	time_t t = time(NULL);
+    	struct tm tm = *localtime(&t)
+    	MMAL_PARAMETER_CAMERA_ANNOTATE annotate = {{MMAL_PARAMETER_ANNOTATE, sizeof(MMAL_PARAMETER_CAMERA_ANNOTATE_V4_T)}};
+    	strftime(annotate.text, MMAL_CAMERA_ANNOTATE_MAX_TEXT_LEN_V3, string, &tm );
+	*/
+	
 	/*if (gcs->cameraParams.disableEXP)
 	{ // Fix Exposure to set ISO value
 		MMAL_PARAMETER_EXPOSUREMODE_T expMode;
