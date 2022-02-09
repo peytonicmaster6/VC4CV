@@ -196,6 +196,11 @@ int main(int argc, char **argv)
 		printf("Failed to start Camera GL\n");
 		terminateEGL(&eglSetup);
 		return EXIT_FAILURE;
+	}else if (camGL == NULL)
+	{
+		printf("Failed to start Camera GL1\n");
+		terminateEGL(&eglSetup);
+		return EXIT_FAILURE;
 	}
 	else
 	{ // Start CamGL
@@ -249,6 +254,7 @@ int main(int argc, char **argv)
 
 				// Render to screen
 				//glViewport((int)((1-renderRatioCorrection) * dispWidth / 2), 0, (int)(renderRatioCorrection * dispWidth), dispHeight);
+				
 				//Draw the left half of the screen
 				glViewport(0, 0, (int)(renderRatioCorrection * dispWidth), dispHeight);
 				glBindFramebuffer(GL_FRAMEBUFFER, 0);
