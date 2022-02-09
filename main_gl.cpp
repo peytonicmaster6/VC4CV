@@ -34,6 +34,7 @@ struct termios terminalSettings;
 
 static void setConsoleRawMode();
 static void processCameraFrame(CamGL_Frame *frame);
+static void processCameraFrame(CamGL_Frame *frame1);
 static void bindExternalTexture(GLuint adr, GLuint tex, int slot);
 
 int main(int argc, char **argv)
