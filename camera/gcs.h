@@ -23,6 +23,7 @@ typedef struct GCS_CameraParams
 	uint8_t disableEXP;
 	uint8_t disableAWB;
 	uint32_t disableISPBlocks;
+	uint32_t camera_num;
 } GCS_CameraParams;
 
 /* Disable ISP Blocks */
