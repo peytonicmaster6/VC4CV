@@ -45,11 +45,12 @@ int main(int argc, char **argv)
 		.height = (uint16_t)camHeight,
 		.fps = (uint16_t)camFPS,
 		.shutterSpeed = 0,
-		.iso = -1
+		.iso = 0,
+		.camera_num =0
 	};
 
 	int arg;
-	while ((arg = getopt(argc, argv, "c:w:h:f:s:i:")) != -1)
+	while ((arg = getopt(argc, argv, "c:w:h:f:s:i:n:")) != -1)
 	{
 		switch (arg)
 		{
@@ -73,13 +74,16 @@ int main(int argc, char **argv)
 			case 'f':
 				params.fps = camFPS = std::stoi(optarg);
 				break;
+			case 'n':
+				params.camera_num = std::stoi(optarg);
+				break;
 			default:
-				printf("Usage: %s [-c (RGB, Y, YUV)] [-w width] [-h height] [-f fps] [-s shutter-speed-ns] [-i iso]\n", argv[0]);
+				printf("Usage: %s [-c (RGB, Y, YUV)] [-w width] [-h height] [-f fps] [-s shutter-speed-ns] [-i iso] [-n camera-num]\n", argv[0]);
 				break;
 		}
 	}
 	if (optind < argc - 1)
-		printf("Usage: %s [-c (RGB, Y, YUV)] [-w width] [-h height] [-f fps] [-s shutter-speed-ns] [-i iso]\n", argv[0]);
+		printf("Usage: %s [-c (RGB, Y, YUV)] [-w width] [-h height] [-f fps] [-s shutter-speed-ns] [-i iso] [-n camera-num] \n", argv[0]);
 
 	// ---- Init ----
 
@@ -98,6 +102,9 @@ int main(int argc, char **argv)
 	setupEGL(&eglSetup, (EGLNativeWindowType*)&window);
 	glClearColor(0.8f, 0.2f, 0.1f, 1.0f);
 
+	//Print out camera number for logging purposes
+	std::cout << "Camera Number " << params.camera_num << "\n";
+	
 	// ---- Setup GL Resources ----
 	
         std::vector<float> vertices; 
@@ -177,6 +184,11 @@ int main(int argc, char **argv)
 	// Init camera GL
 	printf("Initializing Camera GL!\n");
 	camGL = camGL_create(eglSetup, (const CamGL_Params*)&params);
+	
+	//change camera number to 1 and then start the second camera
+        params.camera_num = 1;
+	camGL1 = camGL_create(eglSetup, (const CamGL_Params*)&params);
+	
 	if (camGL == NULL)
 	{
 		printf("Failed to start Camera GL\n");
@@ -234,11 +246,17 @@ int main(int argc, char **argv)
 				// ---- Render frame ----
 
 				// Render to screen
-				glViewport((int)((1-renderRatioCorrection) * dispWidth / 2), 0, (int)(renderRatioCorrection * dispWidth), dispHeight);
+				//glViewport((int)((1-renderRatioCorrection) * dispWidth / 2), 0, (int)(renderRatioCorrection * dispWidth), dispHeight);
+				//Draw the left half of the screen
+				glViewport(0, 0, (int)(renderRatioCorrection * dispWidth), dispHeight);
 				glBindFramebuffer(GL_FRAMEBUFFER, 0);
 				SSQuad->draw();
 				eglSwapBuffers(eglSetup.display, eglSetup.surface);
-
+				
+				//Draw the right half of the screen
+				glViewport(960, 0, (int)(renderRatioCorrection * dispWidth), dispHeight);
+				SSQuad->draw();
+				
 				// ---- Debugging and Statistics ----
 	
 				numFrames++;
