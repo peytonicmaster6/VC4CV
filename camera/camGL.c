@@ -114,6 +114,7 @@ CamGL *camGL_create(EGL_Setup EGLSetup, const CamGL_Params *params)
 	gcsParams.fps = params->fps;
 	gcsParams.shutterSpeed = params->shutterSpeed;
 	gcsParams.iso = params->iso;
+	gcsParams.camera_num = params->camera_num;
 
 	camGL->gcs = gcs_create(&gcsParams);
 	CHECK_STATUS_V(camGL->gcs? 0 : 1, "Error initialising GCS", error_gcs);
