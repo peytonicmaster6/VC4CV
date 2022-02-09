@@ -48,7 +48,7 @@ int main(int argc, char **argv)
 		.fps = (uint16_t)camFPS,
 		.shutterSpeed = 0,
 		.iso = 0,
-		.camera_num =0
+		.camera_num = 0
 	};
 
 	int arg;
