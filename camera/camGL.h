@@ -43,6 +43,7 @@ typedef struct CamGL_Params
 	uint16_t fps;
 	uint32_t shutterSpeed;
 	int32_t iso;
+	uint32_t camera_num;
 } CamGL_Params;
 
 typedef struct CamGL CamGL;
