@@ -20,7 +20,7 @@
 #include "texture.hpp"
 
 CamGL *camGL;
-CamGL1 *camGL;
+CamGL *camGL1;
 int dispWidth, dispHeight;
 int camWidth = 1280, camHeight = 720, camFPS = 30;
 float renderRatioCorrection;
