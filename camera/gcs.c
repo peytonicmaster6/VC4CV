@@ -89,6 +89,10 @@ GCS *gcs_create(GCS_CameraParams *cameraParams)
 	mstatus = mmal_component_create(MMAL_COMPONENT_DEFAULT_CAMERA, &gcs->camera);
 	CHECK_STATUS_M(mstatus, "Failed to create camera", error_cameraCreate);
 
+	// Set camera number
+	MMAL_PARAMETER_INT32_T camera_Num = {{MMAL_PARAMETER_CAMERA_NUM, sizeof(camera_Num)}, gcs->cameraParams.camera_num};
+        mmal_port_parameter_set(gcs->camera->control, &camera_Num.hdr);
+	
 	// Mess with the ISP blocks
 	// https://www.raspberrypi.org/forums/viewtopic.php?f=43&t=175711
 	//mmal_port_parameter_set_uint32(gcs->camera->control, MMAL_PARAMETER_CAMERA_ISP_BLOCK_OVERRIDE, ~cameraParams->disableISPBlocks);
@@ -106,10 +110,6 @@ GCS *gcs_create(GCS_CameraParams *cameraParams)
         //Control the brightness	
 	MMAL_RATIONAL_T value = {60, 100};                //default value is 50
 	mmal_port_parameter_set_rational(gcs->camera->control, MMAL_PARAMETER_BRIGHTNESS, value);	
-	
-	// Set camera number (not working, doesn't actually do anything to which camera is selected)
-	MMAL_PARAMETER_INT32_T camera_num = {{MMAL_PARAMETER_CAMERA_NUM, sizeof(camera_num)}, 1}; //should select camera 2
-        mmal_port_parameter_set(gcs->camera->control, &camera_num.hdr);
 	
 	/*
 	//Set up stereo mode (works I think, but need to fix the encoding issue, get a 0x505 error code when changing encoding to I420 from OPAQUE)
