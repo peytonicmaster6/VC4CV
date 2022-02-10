@@ -188,19 +188,19 @@ int main(int argc, char **argv)
 	camGL = camGL_create(eglSetup, (const CamGL_Params*)&params);
 	
 	//change camera number to 1 and then start the second camera
-        params.camera_num = 1;
-	camGL1 = camGL_create(eglSetup, (const CamGL_Params*)&params);
+        //params.camera_num = 1;
+	//camGL1 = camGL_create(eglSetup, (const CamGL_Params*)&params);
 	
 	if (camGL == NULL)
 	{
 		printf("Failed to start Camera GL\n");
 		terminateEGL(&eglSetup);
 		return EXIT_FAILURE;
-	}else if (camGL == NULL)
-	{
-		printf("Failed to start Camera GL1\n");
-		terminateEGL(&eglSetup);
-		return EXIT_FAILURE;
+	//}else if (camGL == NULL)
+	//{
+		//printf("Failed to start Camera GL1\n");
+		//terminateEGL(&eglSetup);
+		//return EXIT_FAILURE;
 	}
 	else
 	{ // Start CamGL
