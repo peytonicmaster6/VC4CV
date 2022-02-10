@@ -191,26 +191,26 @@ GCS *gcs_create1(GCS_CameraParams *cameraParams)
 	LOG_TRACE("Creating GPU Camera Stream");
 
 	// Allocate memory for structure
-	GCS *gcs = vcos_calloc(1, sizeof(*gcs), "gcs");
-	CHECK_STATUS_V((gcs ? VCOS_SUCCESS : VCOS_ENOMEM), "Failed to allocate context", error_allocate);
-	gcs->cameraParams = *cameraParams;
+	GCS *gcs1 = vcos_calloc(1, sizeof(*gcs1), "gcs");
+	CHECK_STATUS_V((gcs1 ? VCOS_SUCCESS : VCOS_ENOMEM), "Failed to allocate context", error_allocate);
+	gcs1->cameraParams = *cameraParams;
 
 	// Access mutex
-	vstatus = vcos_mutex_create(&gcs->frameReadyMutex1, "gcs-mutex");
+	vstatus = vcos_mutex_create(&gcs1->frameReadyMutex1, "gcs-mutex");
 	CHECK_STATUS_V(vstatus, "Failed to create mutex", error_mutex);
 
 	// Setup timers and callbacks for watchdog (resets whenever a frame is received)
-	vstatus = vcos_timer_create(&gcs->watchdogTimer1, "gcs-watchdog-timer", gcs_onWatchdogTrigger1, gcs);
+	vstatus = vcos_timer_create(&gcs1->watchdogTimer1, "gcs-watchdog-timer", gcs_onWatchdogTrigger1, gcs1);
 	CHECK_STATUS_V(vstatus, "Failed to create timer", error_timer);
     
 	// Create MMAL camera component
-	mstatus = mmal_component_create(MMAL_COMPONENT_DEFAULT_CAMERA, &gcs->camera1);
+	mstatus = mmal_component_create(MMAL_COMPONENT_DEFAULT_CAMERA, &gcs1->camera1);
 	CHECK_STATUS_M(mstatus, "Failed to create camera", error_cameraCreate);
 	
 
     //Set the camera number
     MMAL_PARAMETER_INT32_T camera_Num= {{MMAL_PARAMETER_CAMERA_NUM, sizeof(camera_Num)}, /*gcs->cameraParams.camera_num*/1};
-    mstatus = mmal_port_parameter_set(gcs->camera1->control, &camera_Num.hdr);
+    mstatus = mmal_port_parameter_set(gcs1->camera1->control, &camera_Num.hdr);
     if (mstatus != MMAL_SUCCESS)
     {
 		vcos_log_error("Could not select camera : error %d", mstatus);
@@ -220,18 +220,18 @@ GCS *gcs_create1(GCS_CameraParams *cameraParams)
 	//mmal_port_parameter_set_uint32(gcs->camera->control, MMAL_PARAMETER_CAMERA_ISP_BLOCK_OVERRIDE, ~cameraParams->disableISPBlocks);
 
 	// Enable MMAL camera component
-	mstatus = mmal_component_enable(gcs->camera1);
+	mstatus = mmal_component_enable(gcs1->camera1);
 	CHECK_STATUS_M(mstatus, "Failed to enable camera", error_cameraEnable);
 
 	// Set camera parameters (See mmal_parameters_camera.h)
-	if (gcs->cameraParams.shutterSpeed != 0)
-		mmal_port_parameter_set_uint32(gcs->camera1->control, MMAL_PARAMETER_SHUTTER_SPEED, gcs->cameraParams.shutterSpeed);
-	if (gcs->cameraParams.iso != 0)
-		mmal_port_parameter_set_uint32(gcs->camera1->control, MMAL_PARAMETER_ISO, (uint32_t)gcs->cameraParams.iso);
+	if (gcs1->cameraParams.shutterSpeed != 0)
+		mmal_port_parameter_set_uint32(gcs1->camera1->control, MMAL_PARAMETER_SHUTTER_SPEED, gcs1->cameraParams.shutterSpeed);
+	if (gcs1->cameraParams.iso != 0)
+		mmal_port_parameter_set_uint32(gcs1->camera1->control, MMAL_PARAMETER_ISO, (uint32_t)gcs1->cameraParams.iso);
 		
 	//Control the brightness	
 	MMAL_RATIONAL_T value = {60, 100};
-	mmal_port_parameter_set_rational(gcs->camera1->control, MMAL_PARAMETER_BRIGHTNESS, value);	
+	mmal_port_parameter_set_rational(gcs1->camera1->control, MMAL_PARAMETER_BRIGHTNESS, value);	
 	
 	//Set up stereo mode (works I think, but need to fix the encoding issue, get a 0x505 error code)
      //MMAL_PARAMETER_STEREOSCOPIC_MODE_T stereo = { {MMAL_PARAMETER_STEREOSCOPIC_MODE, sizeof(stereo)},
@@ -268,58 +268,58 @@ GCS *gcs_create1(GCS_CameraParams *cameraParams)
 	}*/
 	
 	// Enable MMAL camera port
-	gcs->camera1->control->userdata = (struct MMAL_PORT_USERDATA_T *)gcs;
-	mstatus = mmal_port_enable(gcs->camera1->control, gcs_onCameraControl);
+	gcs1->camera1->control->userdata = (struct MMAL_PORT_USERDATA_T *)gcs1;
+	mstatus = mmal_port_enable(gcs1->camera1->control, gcs_onCameraControl);
 	CHECK_STATUS_M(mstatus, "Failed to enable camera control port", error_portEnable);
-	gcs->cameraOutput1 = gcs->camera1->output[0]; // Preview Port 0
+	gcs1->cameraOutput1 = gcs1->camera1->output[0]; // Preview Port 0
 
 	// Set format of video output
-	MMAL_ES_FORMAT_T *format = gcs->cameraOutput1->format;
-	format->encoding = gcs->cameraParams.mmalEnc == 0? MMAL_ENCODING_OPAQUE : gcs->cameraParams.mmalEnc;
+	MMAL_ES_FORMAT_T *format = gcs1->cameraOutput1->format;
+	format->encoding = gcs1->cameraParams.mmalEnc == 0? MMAL_ENCODING_OPAQUE : gcs1->cameraParams.mmalEnc;
 	format->encoding_variant = MMAL_ENCODING_I420;
 	MMAL_VIDEO_FORMAT_T *videoFormat = &format->es->video;
-	videoFormat->width = gcs->cameraParams.width;
-	videoFormat->height = gcs->cameraParams.height;
+	videoFormat->width = gcs1->cameraParams.width;
+	videoFormat->height = gcs1->cameraParams.height;
 	videoFormat->crop.x = 0;
 	videoFormat->crop.y = 0;
-	videoFormat->crop.width = gcs->cameraParams.width;
-	videoFormat->crop.height = gcs->cameraParams.height;
-	videoFormat->frame_rate.num = gcs->cameraParams.fps;
+	videoFormat->crop.width = gcs1->cameraParams.width;
+	videoFormat->crop.height = gcs1->cameraParams.height;
+	videoFormat->frame_rate.num = gcs1->cameraParams.fps;
 	videoFormat->frame_rate.den = 1;
-	mstatus = mmal_port_format_commit(gcs->cameraOutput1);
+	mstatus = mmal_port_format_commit(gcs1->cameraOutput1);
 	CHECK_STATUS_M(mstatus, "Failed to set output port format", error_portEnable);
 
 	// Enable zero-copy to store buffers in shared memory
-	mstatus = mmal_port_parameter_set_boolean(gcs->cameraOutput1, MMAL_PARAMETER_ZERO_COPY, MMAL_TRUE);
+	mstatus = mmal_port_parameter_set_boolean(gcs1->cameraOutput1, MMAL_PARAMETER_ZERO_COPY, MMAL_TRUE);
 	CHECK_STATUS_M((mstatus == MMAL_ENOSYS ? MMAL_SUCCESS : mstatus), "Failed to enable zero copy", error_portEnable);
 
 	// Set buffer num/size
-	gcs->cameraOutput1->buffer_num = GCS_SIMUL_BUFFERS;//gcs->cameraOutput->buffer_num_recommended;
-	gcs->cameraOutput1->buffer_size = gcs->cameraOutput1->buffer_size_recommended;
+	gcs1->cameraOutput1->buffer_num = GCS_SIMUL_BUFFERS;//gcs->cameraOutput->buffer_num_recommended;
+	gcs1->cameraOutput1->buffer_size = gcs1->cameraOutput1->buffer_size_recommended;
 
 	// Setup buffer pool for camera output port to use (after enabling zero-copy so those buffers will be allocated through VCSM)
-	gcs->bufferPool1 = mmal_port_pool_create(gcs->cameraOutput1, gcs->cameraOutput1->buffer_num, gcs->cameraOutput1->buffer_size);
-	CHECK_STATUS_M((gcs->bufferPool1 ? MMAL_SUCCESS : MMAL_ENOMEM), "Error allocating pool", error_pool);
+	gcs1->bufferPool1 = mmal_port_pool_create(gcs1->cameraOutput1, gcs1->cameraOutput1->buffer_num, gcs1->cameraOutput1->buffer_size);
+	CHECK_STATUS_M((gcs1->bufferPool1 ? MMAL_SUCCESS : MMAL_ENOMEM), "Error allocating pool", error_pool);
 
 //	cameraParams->width = gcs->cameraOutput->format->es->video.width;
 //	LOG_ERROR("Format %d", gcs->cameraOutput->format->es->video.width);
 
 	LOG_TRACE("Finished setup of GCS");
 
-	return gcs;
+	return gcs1;
 
 error_pool:
-	mmal_port_disable(gcs->cameraOutput1);
+	mmal_port_disable(gcs1->cameraOutput1);
 error_portEnable:
-	mmal_component_disable(gcs->camera1);
+	mmal_component_disable(gcs1->camera1);
 error_cameraEnable:
-	mmal_component_destroy(gcs->camera1);
+	mmal_component_destroy(gcs1->camera1);
 error_cameraCreate:
-	vcos_timer_delete(&gcs->watchdogTimer1);
+	vcos_timer_delete(&gcs1->watchdogTimer1);
 error_timer:
-	vcos_mutex_delete(&gcs->frameReadyMutex1);
+	vcos_mutex_delete(&gcs1->frameReadyMutex1);
 error_mutex:
-	vcos_free(gcs);
+	vcos_free(gcs1);
 error_allocate:
 	return NULL;
 }
@@ -343,22 +343,22 @@ void gcs_destroy(GCS *gcs)
 	vcos_free(gcs);
 }
 
-void gcs_destroy1(GCS *gcs)
+void gcs_destroy1(GCS *gcs1)
 {
-	if (!gcs) return;
+	if (!gcs1) return;
 
 	// Stop worker thread, disable camera component
-	gcs_stop1(gcs);
+	gcs_stop1(gcs1);
 
 	// Destroy camera component
-	mmal_component_disable(gcs->camera1);
-	mmal_component_destroy(gcs->camera1);
+	mmal_component_disable(gcs1->camera1);
+	mmal_component_destroy(gcs1->camera1);
 
 	// Free remaining resources
-	mmal_pool_destroy(gcs->bufferPool1);
-	vcos_mutex_delete(&gcs->frameReadyMutex1);
-	vcos_timer_delete(&gcs->watchdogTimer1);
-	vcos_free(gcs);
+	mmal_pool_destroy(gcs1->bufferPool1);
+	vcos_mutex_delete(&gcs1->frameReadyMutex1);
+	vcos_timer_delete(&gcs1->watchdogTimer1);
+	vcos_free(gcs1);
 }
 
 /* Start GCS (camera stream). Enables MMAL camera and starts watchdog */
@@ -397,32 +397,32 @@ error_port:
 
 
 /*Start GCS (camera stream). Enables MMAL camera and starts watchdog */
-uint8_t gcs_start1(GCS *gcs)
+uint8_t gcs_start1(GCS *gcs1)
 {
 	// Ensure GCS is stopped first
-	gcs_stop1(gcs);
-	gcs->error = 0;
-	gcs->started = 1;
+	gcs_stop1(gcs1);
+	gcs1->error = 0;
+	gcs1->started = 1;
 
 	// Lock mutex to signal frame is not ready
-	vcos_mutex_lock(&gcs->frameReadyMutex1);
+	vcos_mutex_lock(&gcs1->frameReadyMutex1);
 
 	// Enable camera output port and set callback to receive camera frame buffers
-	gcs->cameraOutput1->userdata = (struct MMAL_PORT_USERDATA_T *)gcs;
-	MMAL_STATUS_T mstatus = mmal_port_enable(gcs->cameraOutput1, gcs_onCameraOutput1);
+	gcs1->cameraOutput1->userdata = (struct MMAL_PORT_USERDATA_T *)gcs1;
+	MMAL_STATUS_T mstatus = mmal_port_enable(gcs1->cameraOutput1, gcs_onCameraOutput1);
 	CHECK_STATUS_M(mstatus, "Failed to enable output port", error_port);
 
 	// Send unused buffers to video port to use
 	MMAL_BUFFER_HEADER_T *buffer;
-	while ((buffer = mmal_queue_get(gcs->bufferPool1->queue)) != NULL)
+	while ((buffer = mmal_queue_get(gcs1->bufferPool1->queue)) != NULL)
 	{
-		MMAL_STATUS_T mstatus = mmal_port_send_buffer(gcs->cameraOutput1, buffer);
+		MMAL_STATUS_T mstatus = mmal_port_send_buffer(gcs1->cameraOutput1, buffer);
 		if (mstatus != MMAL_SUCCESS)
-			LOG_ERROR("Failed to send buffer to %s", gcs->cameraOutput1->name);
+			LOG_ERROR("Failed to send buffer to %s", gcs1->cameraOutput1->name);
 	}
 
 	// Start watchdog timer that may stop stream due to lack of frames received (resets whenever frame is received)
-	vcos_timer_set(&gcs->watchdogTimer1, GCS_WATCHDOG_TIMEOUT_MS);
+	vcos_timer_set(&gcs1->watchdogTimer1, GCS_WATCHDOG_TIMEOUT_MS);
 
 	return 0;
 
@@ -463,32 +463,32 @@ void gcs_stop(GCS *gcs)
 
 
 /*Stop GCS (camera output). Stops watchdog and disabled MMAL camera*/
-void gcs_stop1(GCS *gcs)
+void gcs_stop1(GCS *gcs1)
 {
-	gcs->started = 0;
+	gcs1->started = 0;
 
 	// Stop running timers
-	vcos_timer_cancel(&gcs->watchdogTimer1);
+	vcos_timer_cancel(&gcs1->watchdogTimer1);
 
-	if (gcs->started)
+	if (gcs1->started)
 	{
 		// Disable camera output
-		mmal_port_disable(gcs->cameraOutput1);
+		mmal_port_disable(gcs1->cameraOutput1);
 
 		// Stop potentially waiting user
-		if (vcos_mutex_is_locked(&gcs->frameReadyMutex1))
-			vcos_mutex_unlock(&gcs->frameReadyMutex1);
+		if (vcos_mutex_is_locked(&gcs1->frameReadyMutex1))
+			vcos_mutex_unlock(&gcs1->frameReadyMutex1);
 
 		// Reset unused frames
-		if (gcs->processingFrameBuffer1)
+		if (gcs1->processingFrameBuffer1)
 		{
-			mmal_buffer_header_release(gcs->processingFrameBuffer1);
-			gcs->processingFrameBuffer1 = NULL;
+			mmal_buffer_header_release(gcs1->processingFrameBuffer1);
+			gcs1->processingFrameBuffer1 = NULL;
 		}
-		if (gcs->curFrameBuffer1)
+		if (gcs1->curFrameBuffer1)
 		{
-			mmal_buffer_header_release(gcs->curFrameBuffer1);
-			gcs->curFrameBuffer1 = NULL;
+			mmal_buffer_header_release(gcs1->curFrameBuffer1);
+			gcs1->curFrameBuffer1 = NULL;
 		}
 	}
 }
@@ -500,9 +500,9 @@ uint8_t gcs_hasFrameBuffer(GCS *gcs)
 }
 
 /* Returns whether there is a new camera frame available */
-uint8_t gcs_hasFrameBuffer1(GCS *gcs)
+uint8_t gcs_hasFrameBuffer1(GCS *gcs1)
 {
-	return gcs->curFrameBuffer1 != NULL;
+	return gcs1->curFrameBuffer1 != NULL;
 }
 
 /* Returns the most recent camera frame. If no camera frame is available yet, blocks until there is.
@@ -527,22 +527,22 @@ void* gcs_requestFrameBuffer(GCS *gcs)
 
 /* Returns the most recent camera frame. If no camera frame is available yet, blocks until there is.
  * If the last frame has not been returned yet, returns NULL. */
-void* gcs_requestFrameBuffer1(GCS *gcs)
+void* gcs_requestFrameBuffer1(GCS *gcs1)
 {
-	vcos_mutex_lock(&gcs->frameReadyMutex1);
-	if (gcs->processingFrameBuffer1)
+	vcos_mutex_lock(&gcs1->frameReadyMutex1);
+	if (gcs1->processingFrameBuffer1)
 	{ // Not cleaned up last frame
 		LOG_ERROR("Not cleaned up last frame!");
 		return NULL;
 	}
-	gcs->processingFrameBuffer1 = gcs->curFrameBuffer1;
-	gcs->curFrameBuffer1 = NULL;
-	if (!gcs->processingFrameBuffer1)
+	gcs1->processingFrameBuffer1 = gcs1->curFrameBuffer1;
+	gcs1->curFrameBuffer1 = NULL;
+	if (!gcs1->processingFrameBuffer1)
 	{ // Not cleaned up last frame
 		LOG_ERROR("No current frame buffer!");
 		return NULL;
 	}
-	return gcs->processingFrameBuffer1;
+	return gcs1->processingFrameBuffer1;
 }
 
 /* Returns the data of the given MMAL framebuffer. Use after gcs_requestFrameBuffer to get the underlying buffer. */
@@ -570,23 +570,25 @@ void gcs_returnFrameBuffer(GCS *gcs)
 
 /* Return requested Frane Buffer after processing is done.
  * Has to be called before a new frame buffer can be requested. */
-void gcs_returnFrameBuffer1(GCS *gcs)
+void gcs_returnFrameBuffer1(GCS *gcs1)
 {
-	if (gcs->processingFrameBuffer1)
+	if (gcs1->processingFrameBuffer1)
 	{
-		mmal_buffer_header_release(gcs->processingFrameBuffer1);
-		gcs->processingFrameBuffer1 = NULL;
+		mmal_buffer_header_release(gcs1->processingFrameBuffer1);
+		gcs1->processingFrameBuffer1 = NULL;
 	}
 }
 
 /** Callback from the camera control port. */
 static void gcs_onCameraControl(MMAL_PORT_T *port, MMAL_BUFFER_HEADER_T *buf)
 {
-	GCS *gcs = (GCS *)port->userdata;
+    GCS *gcs = (GCS *)port->userdata;
+	GCS *gcs1 = (GCS *)port->userdata;
 	if (buf->cmd == MMAL_EVENT_ERROR)
 	{
 		LOG_ERROR("%s: MMAL error: %s", port->name, mmal_status_to_string(*(MMAL_STATUS_T *)buf->data));
-		gcs_stop1(gcs);
+		gcs_stop(gcs);
+		gcs_stop1(gcs1);
 	}
 	else
 	{
@@ -599,6 +601,7 @@ static void gcs_onCameraControl(MMAL_PORT_T *port, MMAL_BUFFER_HEADER_T *buf)
 static void gcs_onCameraOutput(MMAL_PORT_T *port, MMAL_BUFFER_HEADER_T *buffer)
 {
 	GCS *gcs = (GCS *)port->userdata;
+	//GCS *gcs1 = (GCS *)port->userdata;
 	if (buffer->length == 0)
 	{
 		LOG_TRACE("%s: zero-length buffer => EOS", port->name);
@@ -613,13 +616,19 @@ static void gcs_onCameraOutput(MMAL_PORT_T *port, MMAL_BUFFER_HEADER_T *buffer)
 	{
 		mmal_buffer_header_release(buffer);
 	}
+	//else if (!gcs1->started)
+	//{
+		//mmal_buffer_header_release(buffer);
+	//}
 	else
 	{
 		// Reset watchdog timer for detecting when frames stop coming
 		vcos_timer_set(&gcs->watchdogTimer, GCS_WATCHDOG_TIMEOUT_MS);
+		//vcos_timer_set(&gcs1->watchdogTimer, GCS_WATCHDOG_TIMEOUT_MS);
 
 		// Retract frame ready signal during switch
 		vcos_mutex_trylock(&gcs->frameReadyMutex);
+		//vcos_mutex_trylock(&gcs1->frameReadyMutex);
 
 		// Release now outdated camera frame
 		if (gcs->curFrameBuffer != NULL)
@@ -627,29 +636,40 @@ static void gcs_onCameraOutput(MMAL_PORT_T *port, MMAL_BUFFER_HEADER_T *buffer)
 			mmal_buffer_header_release(gcs->curFrameBuffer);
 			gcs->curFrameBuffer = NULL;
 			// On drop frame
-		}
 
+			mmal_buffer_header_release(gcs->curFrameBuffer1);
+			gcs->curFrameBuffer1 = NULL;
+		}
 		// Set the newest camera frame
 		gcs->curFrameBuffer = buffer;
+		gcs->curFrameBuffer1 = buffer;
 
 		// Send buffer back to port for use (needed? it's a port buffer, should automatically do it, right?)
 		while ((buffer = mmal_queue_get(gcs->bufferPool->queue)) != NULL)
 		{
-			MMAL_STATUS_T status = mmal_port_send_buffer(gcs->cameraOutput, buffer);
-			if (status != MMAL_SUCCESS)
-				LOG_ERROR("Failed to send buffer to %s", gcs->cameraOutput->name);
+			while ((buffer = mmal_queue_get(gcs->bufferPool1->queue)) != NULL)
+			{
+				MMAL_STATUS_T status = mmal_port_send_buffer(gcs->cameraOutput, buffer);
+				if (status != MMAL_SUCCESS)
+					LOG_ERROR("Failed to send buffer to %s", gcs->cameraOutput->name);
+				MMAL_STATUS_T status1 = mmal_port_send_buffer(gcs->cameraOutput1, buffer);
+				if (status1 != MMAL_SUCCESS)
+					LOG_ERROR("Failed to send buffer to %s", gcs->cameraOutput1->name);
+			}
 		}
 	}
 
 	// If not done already signal that a frame is ready
 	if (vcos_mutex_is_locked(&gcs->frameReadyMutex))
 		vcos_mutex_unlock(&gcs->frameReadyMutex);
+	else if(vcos_mutex_is_locked(&gcs->frameReadyMutex1))
+		vcos_mutex_unlock(&gcs->frameReadyMutex1);
 }
 
 /** Callback from camera output port - receive buffer and replace as current */
 static void gcs_onCameraOutput1(MMAL_PORT_T *port, MMAL_BUFFER_HEADER_T *buffer)
 {
-	GCS *gcs = (GCS *)port->userdata;
+	GCS *gcs1 = (GCS *)port->userdata;
 	if (buffer->length == 0)
 	{
 		LOG_TRACE("%s: zero-length buffer => EOS", port->name);
@@ -660,55 +680,63 @@ static void gcs_onCameraOutput1(MMAL_PORT_T *port, MMAL_BUFFER_HEADER_T *buffer)
 		LOG_ERROR("%s: zero buffer handle", port->name);
 		mmal_buffer_header_release(buffer);
 	}
-	else if (!gcs->started)
+	else if (!gcs1->started)
 	{
 		mmal_buffer_header_release(buffer);
 	}
 	else
 	{
 		// Reset watchdog timer for detecting when frames stop coming
-		vcos_timer_set(&gcs->watchdogTimer1, GCS_WATCHDOG_TIMEOUT_MS);
+		vcos_timer_set(&gcs1->watchdogTimer1, GCS_WATCHDOG_TIMEOUT_MS);
 
 		// Retract frame ready signal during switch
-		vcos_mutex_trylock(&gcs->frameReadyMutex1);
+		vcos_mutex_trylock(&gcs1->frameReadyMutex1);
 
 		// Release now outdated camera frame
-		if (gcs->curFrameBuffer1 != NULL)
+		if (gcs1->curFrameBuffer1 != NULL)
 		{ // If it does not exist, it has been consumed
-			mmal_buffer_header_release(gcs->curFrameBuffer1);
-			gcs->curFrameBuffer1 = NULL;
+			mmal_buffer_header_release(gcs1->curFrameBuffer1);
+			gcs1->curFrameBuffer1 = NULL;
 			// On drop frame
 		}
 
 		// Set the newest camera frame
-		gcs->curFrameBuffer1 = buffer;
+		gcs1->curFrameBuffer1 = buffer;
 
 		// Send buffer back to port for use (needed? it's a port buffer, should automatically do it, right?)
-		while ((buffer = mmal_queue_get(gcs->bufferPool1->queue)) != NULL)
+		while ((buffer = mmal_queue_get(gcs1->bufferPool1->queue)) != NULL)
 		{
-			MMAL_STATUS_T status = mmal_port_send_buffer(gcs->cameraOutput1, buffer);
+			MMAL_STATUS_T status = mmal_port_send_buffer(gcs1->cameraOutput1, buffer);
 			if (status != MMAL_SUCCESS)
-				LOG_ERROR("Failed to send buffer to %s", gcs->cameraOutput1->name);
+				LOG_ERROR("Failed to send buffer to %s", gcs1->cameraOutput1->name);
 		}
 	}
 
 	// If not done already signal that a frame is ready
-	if (vcos_mutex_is_locked(&gcs->frameReadyMutex1))
-		vcos_mutex_unlock(&gcs->frameReadyMutex1);
+	if (vcos_mutex_is_locked(&gcs1->frameReadyMutex1))
+		vcos_mutex_unlock(&gcs1->frameReadyMutex1);
 }
 
 /** Watchdog timer callback - stops playback because no frames have arrived from the camera for a while */
 static void gcs_onWatchdogTrigger(void *context)
 {
 	GCS *gcs = context;
+	//GCS *gcs1 = context;
 	LOG_ERROR("%s: no frames received for %d ms, aborting", gcs->cameraOutput->name, GCS_WATCHDOG_TIMEOUT_MS);
 	gcs_stop(gcs);
+	
+	LOG_ERROR("%s: no frames received for %d ms, aborting", gcs->cameraOutput1->name, GCS_WATCHDOG_TIMEOUT_MS);
+	gcs_stop1(gcs);
 }
 
 /** Watchdog timer callback - stops playback because no frames have arrived from the camera for a while */
 static void gcs_onWatchdogTrigger1(void *context)
 {
 	GCS *gcs = context;
+	//GCS *gcs1 = context;
+	LOG_ERROR("%s: no frames received for %d ms, aborting", gcs->cameraOutput->name, GCS_WATCHDOG_TIMEOUT_MS);
+	gcs_stop(gcs);
+	
 	LOG_ERROR("%s: no frames received for %d ms, aborting", gcs->cameraOutput1->name, GCS_WATCHDOG_TIMEOUT_MS);
 	gcs_stop1(gcs);
 }
