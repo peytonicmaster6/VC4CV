@@ -141,6 +141,8 @@ int main(int argc, char **argv)
             	indices.push_back((short)(offset+ (N+1) + 1));
         	}
     	}
+	
+	//Put distortion code here?
     
     	//Debugging info, will print out the indices, vertices, and how many of each there are
     
@@ -188,28 +190,35 @@ int main(int argc, char **argv)
 	camGL = camGL_create(eglSetup, (const CamGL_Params*)&params);
 	
 	//change camera number to 1 and then start the second camera
-        //params.camera_num = 1;
-	//camGL1 = camGL_create(eglSetup, (const CamGL_Params*)&params);
+        params.camera_num = 1;
+	printf("Initializing Camera GL1!\n");
+	camGL1 = camGL_create(eglSetup, (const CamGL_Params*)&params);
 	
 	if (camGL == NULL)
 	{
 		printf("Failed to start Camera GL\n");
 		terminateEGL(&eglSetup);
 		return EXIT_FAILURE;
-	//}else if (camGL == NULL)
-	//{
-		//printf("Failed to start Camera GL1\n");
-		//terminateEGL(&eglSetup);
-		//return EXIT_FAILURE;
+	}else if (camGL == NULL)
+	{
+		printf("Failed to start Camera GL1\n");
+		terminateEGL(&eglSetup);
+		return EXIT_FAILURE;
 	}
 	else
 	{ // Start CamGL
 
 		printf("Starting Camera GL!\n");
 		int status = camGL_startCamera(camGL);
+		printf("Starting Camera GL1!\n");
+		int status1 = camGL_startCamera(camGL1);
 		if (status != CAMGL_SUCCESS)
 		{
 			printf("Failed to start camera GL with code %d!\n", status);
+		}
+		else if (status1 != CAMGL_SUCCESS)
+		{
+			printf("Failed to start camera GL1 with code %d!\n", status1);
 		}
 		else
 		{ // Process incoming frames
@@ -223,50 +232,77 @@ int main(int argc, char **argv)
 
 			// Get handle to frame struct, stays the same when frames are updated
 			CamGL_Frame *frame = camGL_getFrame(camGL);
+			CamGL_Frame *frame1 = camGL_getFrame(camGL1);
+			
 			while ((status = camGL_nextFrame(camGL)) == CAMGL_SUCCESS)
-			{ // Frames was available and has been processed
-
-				// ---- Set camera frame as source ----
-
-				ShaderProgram *shader;
-				if (frame->format == CAMGL_RGB)
-				{
-					shader = shaderCamBlitRGB;
-					shader->use();
-					bindExternalTexture(texRGBAdr, frame->textureRGB, 0);
-				}
-				else if (frame->format == CAMGL_Y)
-				{
-					shader = shaderCamBlitY;
-					shader->use();
-					bindExternalTexture(texYAdrY, frame->textureY, 0);
-				}
-				else if (frame->format == CAMGL_YUV)
-				{
-					shader = shaderCamBlitYUV;
-					shader->use();
-					bindExternalTexture(texYUVAdrY, frame->textureY, 0);
-					bindExternalTexture(texYUVAdrU, frame->textureU, 1);
-					bindExternalTexture(texYUVAdrV, frame->textureV, 2);
-				}
-
-				// ---- Render frame ----
-
-				// Render to screen
-				//glViewport((int)((1-renderRatioCorrection) * dispWidth / 2), 0, (int)(renderRatioCorrection * dispWidth), dispHeight);
+			{// Frames was available and has been processed
 				
-				//Draw the left half of the screen
-				glViewport(0, 0, (int)(renderRatioCorrection * dispWidth), dispHeight);
+				status1 = camGL_nextFrame(camGL1);
+				
+				//------ Annotation Setup --------
+				//char* test = (char*)i;
+				//printf("test", test);
+				camGL_update_annotation(camGL, " test ");
+				camGL_update_annotation(camGL1, " lets go ");
+				ShaderProgram *shader;
+				
+				//Camera 1
+				//if (frame->format == CAMGL_RGB)
+				//{
+					//shader = shaderCamBlitRGB;
+					//shader->use();
+					//bindExternalTexture(texRGBAdr, frame->textureRGB, 0);
+				//}
+				//else if (frame->format == CAMGL_Y)
+				//{
+					//shader = shaderCamBlitY;
+					//shader->use();
+					//bindExternalTexture(texYAdrY, frame->textureY, 0);
+				//}
+				//else if (frame->format == CAMGL_YUV)
+				//{
+				shader = shaderCamBlitYUV;
+				shader->use();
+				bindExternalTexture(texYUVAdrY, frame->textureY, 0);
+				bindExternalTexture(texYUVAdrU, frame->textureU, 1);
+				bindExternalTexture(texYUVAdrV, frame->textureV, 2);
+				//}
+				
+				//glViewport((int)((1-renderRatioCorrection) * dispWidth / 2), 0, (int)(renderRatioCorrection * dispWidth), dispHeight);
+				glViewport(0, 0, 960, 1080);
+				SSQuad->draw();
+				
+				//Camera 2
+				//if (frame1->format == CAMGL_RGB)
+				//{
+					//shader = shaderCamBlitRGB;
+					//shader->use();
+					//bindExternalTexture(texRGBAdr, frame1->textureRGB, 0);
+				//}
+				//else if (frame1->format == CAMGL_Y)
+				//{
+					//shader = shaderCamBlitY;
+					//shader->use();
+					//bindExternalTexture(texYAdrY, frame1->textureY, 0);
+				//}
+				//else if (frame1->format == CAMGL_YUV)
+				//{
+				//shader = shaderCamBlitYUV;
+				//shader->use();
+				bindExternalTexture(texYUVAdrY, frame1->textureY, 0);
+				bindExternalTexture(texYUVAdrU, frame1->textureU, 1);
+				bindExternalTexture(texYUVAdrV, frame1->textureV, 2);
+				//}				
+					
+				glViewport(960, 0, 960, 1080);
 				glBindFramebuffer(GL_FRAMEBUFFER, 0);
 				SSQuad->draw();
-				eglSwapBuffers(eglSetup.display, eglSetup.surface);
-				
-				//Draw the right half of the screen
-				glViewport(960, 0, (int)(renderRatioCorrection * dispWidth), dispHeight);
-				SSQuad->draw();
-				
+					
+				eglSwapBuffers(eglSetup.display, eglSetup.surface); 
+
+
 				// ---- Debugging and Statistics ----
-	
+		
 				numFrames++;
 				if (numFrames % 100 == 0)
 				{ // Log FPS
@@ -289,17 +325,23 @@ int main(int argc, char **argv)
 						else if (cin == 'q') break;
 						else printf("%c", cin);
 					}
+
 				}
 			}
 			if (status != 0)
 				printf("Camera GL was interrupted with code %d!\n", status);
+			else if(status1 != 0)
+				printf("Camera GL was interrupted with code %d!\n", status1);
 			else
 				camGL_stopCamera(camGL);
+				camGL_stopCamera(camGL1);
 		}
 		camGL_destroy(camGL);
+		camGL_destroy(camGL1);
 		terminateEGL(&eglSetup);
 
 		return status == 0 ? EXIT_SUCCESS : EXIT_FAILURE;
+		return status1 == 0 ? EXIT_SUCCESS : EXIT_FAILURE;
 	}
 }
 
