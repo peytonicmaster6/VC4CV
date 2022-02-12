@@ -199,7 +199,7 @@ int main(int argc, char **argv)
 		printf("Failed to start Camera GL\n");
 		terminateEGL(&eglSetup);
 		return EXIT_FAILURE;
-	}else if (camGL == NULL)
+	}else if (camGL1 == NULL)
 	{
 		printf("Failed to start Camera GL1\n");
 		terminateEGL(&eglSetup);
@@ -246,7 +246,7 @@ int main(int argc, char **argv)
 				camGL_update_annotation(camGL1, " lets go ");
 				ShaderProgram *shader;
 				
-				//Camera 1
+				//----------- Camera 1 ---------------
 				//if (frame->format == CAMGL_RGB)
 				//{
 					//shader = shaderCamBlitRGB;
@@ -272,7 +272,7 @@ int main(int argc, char **argv)
 				glViewport(0, 0, 960, 1080);
 				SSQuad->draw();
 				
-				//Camera 2
+				//------- Camera 2 ----------------
 				//if (frame1->format == CAMGL_RGB)
 				//{
 					//shader = shaderCamBlitRGB;
