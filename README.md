@@ -3,7 +3,7 @@ VideoCore IV Computer Vision framework and examples - GL- and QPU-based
 
 This repository aims to make low-level CV on the RaspberryPis /w VideoCore IV (e.g. Zero) more accessible by providing examples and a slim framework to build on. It only covers real-time camera frame processing using both OpenGL shaders and QPU assembly programs.
 
-Modified code to get the GPU and QPU programs working out of the box on kernel 5.10.63-v7+ (Raspbian Buster), as well as adding in barrel distortion shaders (hopefully).
+Modified code to get the GPU and QPU programs working out of the box on kernel 5.10.63-v7+ (Raspbian Buster), as well as adding in a barrel distortion shader and text annotation via serial. Performance is a smooth 30fps at 1080p if the `force_turbo` seetting is enabled in /boot/config.txt. Otherwise, performance is about 26fps. Overclocking the GPU to 500mHz will increase performance to 33-35fps, and there could be even more boosts if you are able to overclock the GPU higher and provide active cooling.
 
 To get the programs to work, the legacy driver must be enabled. Go to /boot/config.txt and comment out any lines containing 
 ```
