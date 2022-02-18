@@ -430,3 +430,9 @@ static bool camGL_getQuit(CamGL *camGL)
 	vcos_mutex_unlock(&camGL->accessMutex);
 	return quit;
 }
+
+void camGL_update_annotation(CamGL *camGL, const char *string)
+{
+	gcs_annotate(camGL->gcs, string);
+	
+} 
