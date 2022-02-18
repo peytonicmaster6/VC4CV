@@ -9,9 +9,9 @@ extern "C" {
 #include "eglUtil.h"
 
 #define CAMGL_SUCCESS			0
-#define CAMGL_QUIT				1
-#define CAMGL_ERROR				2
-#define CAMGL_ALREADY_STARTED	3
+#define CAMGL_QUIT			1
+#define CAMGL_ERROR			2
+#define CAMGL_ALREADY_STARTED	        3
 #define CAMGL_START_FAILED		4
 #define CAMGL_NOT_STARTED		5
 #define CAMGL_GL_ERROR			6
