@@ -63,7 +63,8 @@ void* gcs_getFrameBufferData(void *framebuffer);
  * Has to be called before a new frame buffer can be requested. */
 void gcs_returnFrameBuffer(GCS *gcs);
 
-
+int gcs_annotate(GCS *gcs, const char *string);
+	
 #ifdef __cplusplus
 }
 #endif
