@@ -67,6 +67,8 @@ uint8_t camGL_hasNextFrame(CamGL *camGL);
  * If no camera frame is available yet, blocks until there is.
  * If the last frame has not been returned yet or camera stream was interrupted, returns error code. */
 int camGL_nextFrame(CamGL *camGL);
+	
+void camGL_update_annotation(CamGL *camGL, const char *string);
 
 #ifdef __cplusplus
 }
