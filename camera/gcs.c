@@ -111,19 +111,6 @@ GCS *gcs_create(GCS_CameraParams *cameraParams)
 	MMAL_RATIONAL_T value = {60, 100};                //default value is 50
 	mmal_port_parameter_set_rational(gcs->camera->control, MMAL_PARAMETER_BRIGHTNESS, value);	
 	
-	/*
-	//Set up stereo mode (works I think, but need to fix the encoding issue, get a 0x505 error code when changing encoding to I420 from OPAQUE)
-        MMAL_PARAMETER_STEREOSCOPIC_MODE_T stereo = { {MMAL_PARAMETER_STEREOSCOPIC_MODE, sizeof(stereo)},MMAL_STEREOSCOPIC_MODE_SIDE_BY_SIDE, MMAL_TRUE, MMAL_FALSE};
-        mmal_port_parameter_set(gcs->camera->control, &stereo.hdr);
-	
-	//Set up text annotation (still a work in progess)
-    	const char *string;
-    	time_t t = time(NULL);
-    	struct tm tm = *localtime(&t)
-    	MMAL_PARAMETER_CAMERA_ANNOTATE annotate = {{MMAL_PARAMETER_ANNOTATE, sizeof(MMAL_PARAMETER_CAMERA_ANNOTATE_V4_T)}};
-    	strftime(annotate.text, MMAL_CAMERA_ANNOTATE_MAX_TEXT_LEN_V3, string, &tm );
-	*/
-	
 	/*if (gcs->cameraParams.disableEXP)
 	{ // Fix Exposure to set ISO value
 		MMAL_PARAMETER_EXPOSUREMODE_T expMode;
@@ -142,6 +129,7 @@ GCS *gcs_create(GCS_CameraParams *cameraParams)
 		MMAL_PARAMETER_AWB_GAINS_T awbGains = { { MMAL_PARAMETER_CUSTOM_AWB_GAINS, sizeof(awbGains) }, { 1, 1 }, { 1, 1 }};
 		mmal_port_parameter_set(gcs->camera->control, &awbGains.hdr);
 	}*/
+	
 	// Enable MMAL camera port
 	gcs->camera->control->userdata = (struct MMAL_PORT_USERDATA_T *)gcs;
 	mstatus = mmal_port_enable(gcs->camera->control, gcs_onCameraControl);
@@ -398,4 +386,39 @@ static void gcs_onWatchdogTrigger(void *context)
 	GCS *gcs = context;
 	LOG_ERROR("%s: no frames received for %d ms, aborting", gcs->cameraOutput->name, GCS_WATCHDOG_TIMEOUT_MS);
 	gcs_stop(gcs);
+}
+
+int gcs_annotate(GCS *gcs, const char *string) 
+{
+	//Annotate text (work in progess)
+    MMAL_PARAMETER_CAMERA_ANNOTATE_V4_T annotate =
+    {{MMAL_PARAMETER_ANNOTATE, sizeof(MMAL_PARAMETER_CAMERA_ANNOTATE_V4_T)}};
+    
+    //const char *string = "this is just a test";
+    //annotate.string = string;
+    //time_t t = time(NULL);
+    //struct tm tm = *localtime(&t);
+    //char tmp[MMAL_CAMERA_ANNOTATE_MAX_TEXT_LEN_V3];
+    //int process_datetime = 1;
+
+    annotate.enable = 1;
+    annotate.enable_text_background = MMAL_TRUE;
+    //annotate.text_size = 64;
+    //annotate.show_frame_num = MMAL_TRUE;
+    
+    strncpy(annotate.text, string, MMAL_CAMERA_ANNOTATE_MAX_TEXT_LEN_V3);
+    
+    
+    annotate.custom_text_colour = MMAL_TRUE;
+    annotate.custom_text_Y = 0xffffff&0xff;
+    annotate.custom_text_U = (0xffffff>>8)&0xff;
+    annotate.custom_text_V = (0xffffff>>16)&0xff;
+    
+    annotate.custom_background_colour = MMAL_TRUE;
+    annotate.custom_background_Y = 0x29f06e&0xff;
+    annotate.custom_background_U = (0x29f06e>>8)&0xff;
+    annotate.custom_background_V = (0x29f06e>>16)&0xff;
+         
+    return mmal_port_parameter_set(gcs->camera->control, &annotate.hdr);
+	
 }
