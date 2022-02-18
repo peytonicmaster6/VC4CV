@@ -408,16 +408,17 @@ int gcs_annotate(GCS *gcs, const char *string)
     
     strncpy(annotate.text, string, MMAL_CAMERA_ANNOTATE_MAX_TEXT_LEN_V3);
     
-    
+    //set the text color to apepar white on the blue background (also works for a black background)
     annotate.custom_text_colour = MMAL_TRUE;
-    annotate.custom_text_Y = 0xffffff&0xff;
-    annotate.custom_text_U = (0xffffff>>8)&0xff;
-    annotate.custom_text_V = (0xffffff>>16)&0xff;
+    annotate.custom_text_Y = 255;
+    annotate.custom_text_U = 255;
+    annotate.custom_text_V = 107;
     
+    //create a blue background for the text
     annotate.custom_background_colour = MMAL_TRUE;
-    annotate.custom_background_Y = 0x29f06e&0xff;
-    annotate.custom_background_U = (0x29f06e>>8)&0xff;
-    annotate.custom_background_V = (0x29f06e>>16)&0xff;
+    annotate.custom_background_Y = 29;  //0   (for black)
+    annotate.custom_background_U = 255; //128 (for black)
+    annotate.custom_background_V = 107; //128 (for black)
          
     return mmal_port_parameter_set(gcs->camera->control, &annotate.hdr);
 	
