@@ -7,9 +7,9 @@ int setupEGL(EGL_Setup *setup, EGLNativeWindowType window)
 	{
 		EGL_CONFORMANT,		EGL_OPENGL_ES2_BIT,
 		EGL_SURFACE_TYPE,	EGL_WINDOW_BIT,
-		EGL_RED_SIZE,		5,
-		EGL_GREEN_SIZE,		6,
-		EGL_BLUE_SIZE,		5,
+		EGL_RED_SIZE,		8, //5
+		EGL_GREEN_SIZE,		8, //6
+		EGL_BLUE_SIZE,		8, //5
 		EGL_ALPHA_SIZE,		0,
 		EGL_DEPTH_SIZE,		0,
 		EGL_NONE
