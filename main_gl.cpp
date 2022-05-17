@@ -55,7 +55,7 @@ int main(int argc, char **argv)
 	fd = open("/dev/ttyACM0", O_RDWR | O_NOCTTY | O_NDELAY);
 	if (fd == -1)
 	{
-    perror("open_port: Unable to open /dev/ACM0 - "); //coult not open the port
+		perror("open_port: Unable to open /dev/ACM0 - "); //coult not open the port
 	}
 	else
 		fcntl(fd, F_SETFL, 0);
@@ -72,7 +72,7 @@ int main(int argc, char **argv)
 		.iso = 0,
 		.camera_num = 0
 	};
-
+	
 	int arg;
 	while ((arg = getopt(argc, argv, "c:w:h:f:s:i:n:")) != -1)
 	{
@@ -121,8 +121,6 @@ int main(int argc, char **argv)
 	dispWidth = window.width;
 	dispHeight = window.height;
 	renderRatioCorrection = (((float)dispHeight / camHeight) * camWidth) / dispWidth;  
-	//0.5 for 960x1080 camera resolution on 1080p monitor
-	//1 for 1920x1080 camera resolution on 1080p monitor
 
 	// Setup EGL context
 	setupEGL(&eglSetup, (EGLNativeWindowType*)&window);
@@ -131,80 +129,16 @@ int main(int argc, char **argv)
 	std::cout << "Camera Number " << params.camera_num << "\n";
 
 	// ---- Setup GL Resources ----
-
-    /*
-	// Create screen-space quad for rendering
-	SSQuad = new Mesh ({ POS, TEX }, {
-		//Quadrant 1, eight triangles
-		-1,  1, 0, 0, 1,
-		-0.5,  1, 0, 0.25, 1,
-		-1,  0.5, 0, 0, 0.75,
-		
-		-0.5,  1, 0, 0.25, 1,
-		-0.5,  0.5, 0, 0.25, 0.75,
-		-1,  0.5, 0, 0, 0.75,
-
-		-1,  0.5, 0, 0, 0.75,
-		-0.5,  0.5, 0, 0.25, 0.75,
-		-1,  0, 0, 0, 0.5,
-
-		-0.5,  0.5, 0, 0.25, 0.75,
-		-0.5,  0, 0, 0.25, 0.5,
-		-1,  0, 0, 0, 0.5,
-
-		-0.5,  1, 0, 0.25, 1,
-		 0,  1, 0, 0.5, 1,
-		-0.5,  0.5, 0, 0.25, 0.75,
-		
-		 0,  1, 0, 0.5, 1,
-		 0,  0.5, 0, 0.5, 0.75,
-		-0.5,  0.5, 0, 0.25, 0.75,
-
-		-0.5,  0.5, 0, 0.25, 0.75,
-		 0,  0.5, 0, 0.5, 0.75,
-		-0.5,  0, 0, 0.25, 0.5,
-
-	     0,  0.5, 0, 0.5, 0.75,
-		 0,  0, 0, 0.5, 0.5,
-	    -0.5,  0, 0, 0.25, 0.5,
-		
-		//Quadrant 2, two triangles
-		 0,  1, 0, 0.5, 1,
-		 1,  1, 0, 1, 1,
-		 0,  0, 0, 0.5, 0.5,
-		 1,  1, 0, 1, 1,
-		 1,  0, 0, 1, 0.5,
-		 0,  0, 0, 0.5, 0.5,
-		 
-		//Quadrant 3, two triangles
-		-1,  0, 0, 0, 0.5,
-		 0,  0, 0, 0.5, 0.5,
-		-1,  -1, 0, 0, 0,
-		 0,  0, 0, 0.5, 0.5,
-		 0,  -1, 0, 0.5, 0,
-		-1,  -1, 0, 0, 0,
-		
-		//Quadrant 4, two triangles
-		 0,  0, 0, 0.5, 0.5,
-		 1,  0, 0, 1, 0.5,
-		 0,  -1, 0, 0.5, 0,
-		 1,  0, 0, 1, 0.5,
-		 1,  -1, 0, 1, 0,
-		 0,  -1, 0, 0.5, 0,
-	}, {});*/
-	
-
-    
 	std::vector<float> vertices; 
-    std::vector<unsigned short> indices;
+	std::vector<unsigned short> indices;
     
 	float N = 100;
-    float z = 0;
+        float z = 0;
     
-    for (float x = -1, a = 0; x <= 1, a <= 1; x+= 2/N, a += 1/N)
-    {
-        for (float y = -1, b = 0; y <= 1, b <= 1; y+= 2/N, b+= 1/N)
+        for (float x = -1, a = 0; x <= 1, a <= 1; x+= 2/N, a += 1/N)
         {
+        	for (float y = -1, b = 0; y <= 1, b <= 1; y+= 2/N, b+= 1/N)
+        	{
 			float theta = atan2(y, x);
 			float r = sqrt(x*x + y*y);
 			r = r -0.15*pow(r, 3.0) + 0.01*pow(r, 5.0);
@@ -215,56 +149,38 @@ int main(int argc, char **argv)
 			vertices.push_back(z);
 			vertices.push_back(a);
 			vertices.push_back(b);
+        	}
         }
-        
-    }
 	 
-    for (int x = 0; x < N; x++)
-    {
-        for (int z = 0; z < N; z++)
+	for (int x = 0; x < N; x++)
         {
+        	for (int z = 0; z < N; z++)
+        	{
 			int offset = x * (N+1) + z;
-            indices.push_back((short)(offset+0));
-            indices.push_back((short)(offset+1));
-            indices.push_back((short)(offset+ (N+1) + 1));
-            indices.push_back((short)(offset+0));
-            indices.push_back((short)(offset+ (N+1)));
-            indices.push_back((short)(offset+ (N+1) + 1));
-        }
-    }
+            		indices.push_back((short)(offset+0));
+            		indices.push_back((short)(offset+1));
+            		indices.push_back((short)(offset+ (N+1) + 1));
+            		indices.push_back((short)(offset+0));
+            		indices.push_back((short)(offset+ (N+1)));
+            		indices.push_back((short)(offset+ (N+1) + 1));
+        	}
+    	}
     
-    //Debugging info, will print out the indices, vertices, and how many of each there are
-    
-    //unsigned int indicesCount = indices.size();
-    //unsigned int verticesCount = vertices.size();
+    	//Debugging info, will print out the indices, vertices, and how many of each there are
+   
+    	//unsigned int indicesCount = indices.size();
+    	//unsigned int verticesCount = vertices.size();
         
-    //for (auto i: indices)
+    	//for (auto i: indices)
 		//std::cout << i << ' ';
     
-    //for (auto i: vertices)
+    	//for (auto i: vertices)
 		//std::cout << i << ' ';
 		
 	//std::cout << '\n' << verticesCount << '\n';
 	//std::cout << '\n' << indicesCount << '\n';
 	
 	SSQuad = new Mesh ({ POS, TEX }, vertices, indices);
-	
-	/*	
-	//original quad
-	SSQuad = new Mesh ({ POS, TEX }, {
-		-1, -1, 0, 0, 0, //0
-		-1,  1, 0, 0, 1, //1
-		 1, -1, 0, 1, 0,  //2
-		 1,  1, 0, 1, 1, //3
-
-		
-		 //1,  1, 0, 1, 1,  //3
-
-		//-1, -1, 0, 0, 0,  //0
-	}, {
-		0,1,3,
-		0,2,3,
-		});*/
 
 	// Load shaders
 	shaderCamBlitRGB = new ShaderProgram("../gl_shaders/CamES/vert.glsl", "../gl_shaders/CamES/frag_camRGB.glsl");
