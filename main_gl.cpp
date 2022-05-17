@@ -19,11 +19,21 @@
 #include "shader.hpp"
 #include "texture.hpp"
 
+#include <math.h>
+
+#include <fcntl.h>
+#include <sstream>
+#include <iostream>
+
 CamGL *camGL;
 CamGL *camGL1;
 int dispWidth, dispHeight;
 int camWidth = 1280, camHeight = 720, camFPS = 30;
 float renderRatioCorrection;
+
+std::string heart_rate;
+std::string body_temp;
+std::string helmet_temp;
 
 EGL_Setup eglSetup;
 Mesh *SSQuad;
@@ -36,9 +46,21 @@ static void setConsoleRawMode();
 static void processCameraFrame(CamGL_Frame *frame);
 static void processCameraFrame(CamGL_Frame *frame1);
 static void bindExternalTexture(GLuint adr, GLuint tex, int slot);
+static void CreateVertexBuffer();
 
 int main(int argc, char **argv)
 {
+	// ---- Start Serial Port ----
+	int fd; /* File descriptor for the port */
+	fd = open("/dev/ttyACM0", O_RDWR | O_NOCTTY | O_NDELAY);
+	if (fd == -1)
+	{
+    perror("open_port: Unable to open /dev/ACM0 - "); //coult not open the port
+	}
+	else
+		fcntl(fd, F_SETFL, 0);
+
+	
 	// ---- Read arguments ----
 
 	CamGL_Params params = {
@@ -80,7 +102,7 @@ int main(int argc, char **argv)
 				params.camera_num = std::stoi(optarg);
 				break;
 			default:
-				printf("Usage: %s [-c (RGB, Y, YUV)] [-w width] [-h height] [-f fps] [-s shutter-speed-ns] [-i iso] [-n camera-num]\n", argv[0]);
+				printf("Usage: %s [-c (RGB, Y, YUV)] [-w width] [-h height] [-f fps] [-s shutter-speed-ns] [-i iso] [-n camera-num] \n", argv[0]);
 				break;
 		}
 	}
@@ -98,61 +120,128 @@ int main(int argc, char **argv)
 		return EXIT_FAILURE;
 	dispWidth = window.width;
 	dispHeight = window.height;
-	renderRatioCorrection = (((float)dispHeight / camHeight) * camWidth) / dispWidth;
+	renderRatioCorrection = (((float)dispHeight / camHeight) * camWidth) / dispWidth;  
+	//0.5 for 960x1080 camera resolution on 1080p monitor
+	//1 for 1920x1080 camera resolution on 1080p monitor
 
 	// Setup EGL context
 	setupEGL(&eglSetup, (EGLNativeWindowType*)&window);
 	glClearColor(0.8f, 0.2f, 0.1f, 1.0f);
-
-	//Print out camera number for logging purposes
+	
 	std::cout << "Camera Number " << params.camera_num << "\n";
-	
+
 	// ---- Setup GL Resources ----
+
+    /*
+	// Create screen-space quad for rendering
+	SSQuad = new Mesh ({ POS, TEX }, {
+		//Quadrant 1, eight triangles
+		-1,  1, 0, 0, 1,
+		-0.5,  1, 0, 0.25, 1,
+		-1,  0.5, 0, 0, 0.75,
+		
+		-0.5,  1, 0, 0.25, 1,
+		-0.5,  0.5, 0, 0.25, 0.75,
+		-1,  0.5, 0, 0, 0.75,
+
+		-1,  0.5, 0, 0, 0.75,
+		-0.5,  0.5, 0, 0.25, 0.75,
+		-1,  0, 0, 0, 0.5,
+
+		-0.5,  0.5, 0, 0.25, 0.75,
+		-0.5,  0, 0, 0.25, 0.5,
+		-1,  0, 0, 0, 0.5,
+
+		-0.5,  1, 0, 0.25, 1,
+		 0,  1, 0, 0.5, 1,
+		-0.5,  0.5, 0, 0.25, 0.75,
+		
+		 0,  1, 0, 0.5, 1,
+		 0,  0.5, 0, 0.5, 0.75,
+		-0.5,  0.5, 0, 0.25, 0.75,
+
+		-0.5,  0.5, 0, 0.25, 0.75,
+		 0,  0.5, 0, 0.5, 0.75,
+		-0.5,  0, 0, 0.25, 0.5,
+
+	     0,  0.5, 0, 0.5, 0.75,
+		 0,  0, 0, 0.5, 0.5,
+	    -0.5,  0, 0, 0.25, 0.5,
+		
+		//Quadrant 2, two triangles
+		 0,  1, 0, 0.5, 1,
+		 1,  1, 0, 1, 1,
+		 0,  0, 0, 0.5, 0.5,
+		 1,  1, 0, 1, 1,
+		 1,  0, 0, 1, 0.5,
+		 0,  0, 0, 0.5, 0.5,
+		 
+		//Quadrant 3, two triangles
+		-1,  0, 0, 0, 0.5,
+		 0,  0, 0, 0.5, 0.5,
+		-1,  -1, 0, 0, 0,
+		 0,  0, 0, 0.5, 0.5,
+		 0,  -1, 0, 0.5, 0,
+		-1,  -1, 0, 0, 0,
+		
+		//Quadrant 4, two triangles
+		 0,  0, 0, 0.5, 0.5,
+		 1,  0, 0, 1, 0.5,
+		 0,  -1, 0, 0.5, 0,
+		 1,  0, 0, 1, 0.5,
+		 1,  -1, 0, 1, 0,
+		 0,  -1, 0, 0.5, 0,
+	}, {});*/
 	
-        std::vector<float> vertices; 
-        std::vector<unsigned short> indices;
-        
-	float N = 100;    //create an NxN grid of triangles (NxNx2 Triangles produced)
-        float z = 0;      //empty z component for the POS vector
+
     
-        for (float x = -1, a = 0; x <= 1, a <= 1; x+= 2/N, a += 1/N)
+	std::vector<float> vertices; 
+    std::vector<unsigned short> indices;
+    
+	float N = 100;
+    float z = 0;
+    
+    for (float x = -1, a = 0; x <= 1, a <= 1; x+= 2/N, a += 1/N)
+    {
+        for (float y = -1, b = 0; y <= 1, b <= 1; y+= 2/N, b+= 1/N)
         {
-            for (float y = -1, b = 0; y <= 1, b <= 1; y+= 2/N, b+= 1/N)
-            {
-	    	vertices.push_back((float)(x));
-		vertices.push_back((float)(y));
-		vertices.push_back((float)(z));
-		vertices.push_back((float)(a));
-		vertices.push_back((float)(b));
-            }
-        
+			float theta = atan2(y, x);
+			float r = sqrt(x*x + y*y);
+			r = r -0.15*pow(r, 3.0) + 0.01*pow(r, 5.0);
+			vertices.push_back(r*cos(theta));
+			vertices.push_back(r*sin(theta));
+			//vertices.push_back(x);
+			//vertices.push_back(y);
+			vertices.push_back(z);
+			vertices.push_back(a);
+			vertices.push_back(b);
         }
-	 
-        for (int x = 0; x < N; x++)
-        {
-            for (int z = 0; z < N; z++)
-            {
-	        int offset = x * (N+1) + z;
-                indices.push_back((short)(offset+0));
-                indices.push_back((short)(offset+1));
-            	indices.push_back((short)(offset+ (N+1) + 1));
-            	indices.push_back((short)(offset+0));
-            	indices.push_back((short)(offset+ (N+1)));
-            	indices.push_back((short)(offset+ (N+1) + 1));
-        	}
-    	}
-	
-	//Put distortion code here?
-    
-    	//Debugging info, will print out the indices, vertices, and how many of each there are
-    
-    	//unsigned int indicesCount = indices.size();
-    	//unsigned int verticesCount = vertices.size();
         
-    	//for (auto i: indices)
+    }
+	 
+    for (int x = 0; x < N; x++)
+    {
+        for (int z = 0; z < N; z++)
+        {
+			int offset = x * (N+1) + z;
+            indices.push_back((short)(offset+0));
+            indices.push_back((short)(offset+1));
+            indices.push_back((short)(offset+ (N+1) + 1));
+            indices.push_back((short)(offset+0));
+            indices.push_back((short)(offset+ (N+1)));
+            indices.push_back((short)(offset+ (N+1) + 1));
+        }
+    }
+    
+    //Debugging info, will print out the indices, vertices, and how many of each there are
+    
+    //unsigned int indicesCount = indices.size();
+    //unsigned int verticesCount = vertices.size();
+        
+    //for (auto i: indices)
 		//std::cout << i << ' ';
     
-    	//for (auto i: vertices)
+    //for (auto i: vertices)
 		//std::cout << i << ' ';
 		
 	//std::cout << '\n' << verticesCount << '\n';
@@ -160,16 +249,22 @@ int main(int argc, char **argv)
 	
 	SSQuad = new Mesh ({ POS, TEX }, vertices, indices);
 	
-        /*//Original Mesh
-	// Create screen-space quad for rendering
+	/*	
+	//original quad
 	SSQuad = new Mesh ({ POS, TEX }, {
-		-1,  1, 0, 0, 1,
-		 1,  1, 0, 1, 1,
-		-1, -1, 0, 0, 0,
-		 1,  1, 0, 1, 1,
-		 1, -1, 0, 1, 0,
-		-1, -1, 0, 0, 0,
-	}, {});*/
+		-1, -1, 0, 0, 0, //0
+		-1,  1, 0, 0, 1, //1
+		 1, -1, 0, 1, 0,  //2
+		 1,  1, 0, 1, 1, //3
+
+		
+		 //1,  1, 0, 1, 1,  //3
+
+		//-1, -1, 0, 0, 0,  //0
+	}, {
+		0,1,3,
+		0,2,3,
+		});*/
 
 	// Load shaders
 	shaderCamBlitRGB = new ShaderProgram("../gl_shaders/CamES/vert.glsl", "../gl_shaders/CamES/frag_camRGB.glsl");
@@ -188,20 +283,11 @@ int main(int argc, char **argv)
 	// Init camera GL
 	printf("Initializing Camera GL!\n");
 	camGL = camGL_create(eglSetup, (const CamGL_Params*)&params);
-	
-	//change camera number to 1 and then start the second camera
-        params.camera_num = 1;
-	printf("Initializing Camera GL1!\n");
+	params.camera_num = 1;
 	camGL1 = camGL_create(eglSetup, (const CamGL_Params*)&params);
-	
 	if (camGL == NULL)
 	{
 		printf("Failed to start Camera GL\n");
-		terminateEGL(&eglSetup);
-		return EXIT_FAILURE;
-	}else if (camGL1 == NULL)
-	{
-		printf("Failed to start Camera GL1\n");
 		terminateEGL(&eglSetup);
 		return EXIT_FAILURE;
 	}
@@ -212,6 +298,7 @@ int main(int argc, char **argv)
 		int status = camGL_startCamera(camGL);
 		printf("Starting Camera GL1!\n");
 		int status1 = camGL_startCamera(camGL1);
+		
 		if (status != CAMGL_SUCCESS)
 		{
 			printf("Failed to start camera GL with code %d!\n", status);
@@ -222,14 +309,14 @@ int main(int argc, char **argv)
 		}
 		else
 		{ // Process incoming frames
-
+			
 			// For non-blocking input even over ssh
 			setConsoleRawMode();
 
 			auto startTime = std::chrono::high_resolution_clock::now();
 			auto lastTime = startTime;
 			int numFrames = 0, lastFrames = 0;
-
+           
 			// Get handle to frame struct, stays the same when frames are updated
 			CamGL_Frame *frame = camGL_getFrame(camGL);
 			CamGL_Frame *frame1 = camGL_getFrame(camGL1);
@@ -237,16 +324,48 @@ int main(int argc, char **argv)
 			while ((status = camGL_nextFrame(camGL)) == CAMGL_SUCCESS)
 			{// Frames was available and has been processed
 				
-				status1 = camGL_nextFrame(camGL1);
+				////Read the Serial port
+				fcntl(fd, F_SETFL, FNDELAY);
+				char buff[64];
+				ssize_t rc = read(fd, buff, sizeof(buff));
+				buff[rc] = 0;
 				
-				//------ Annotation Setup --------
-				//char* test = (char*)i;
-				//printf("test", test);
-				camGL_update_annotation(camGL, " test ");
-				camGL_update_annotation(camGL1, " lets go ");
+				if (rc > 0){
+					std::string str = buff;
+					std::vector<std::string> result;
+					std::stringstream s_stream(str);
+					//std::vector<std::string> strings = {"Heart Rate: ", "Body Temp: ", "Helmet Temp: "};
+      
+					while(s_stream.good()) {
+						std::string substr;
+						getline(s_stream, substr, ','); //get first string delimited by comma
+						result.push_back(substr);
+					}
+      
+					if (result.size() > 1){
+						heart_rate = result[0];
+						body_temp = result[1];
+						helmet_temp = result[2];
+					}
+				}
+				
+				status1 = camGL_nextFrame(camGL1);
+				if (status1 != CAMGL_SUCCESS)
+				{
+					break;
+				}
+
+				std::string left = "Heart Rate: " + heart_rate + ", Body Temp: " + body_temp + ", Helmet Temp: " + helmet_temp + "";
+				const char* left_eye = left.c_str();
+				
+				std::string right = " ";
+				const char* right_eye = right.c_str();
+				
+				camGL_update_annotation(camGL, left_eye);
+				camGL_update_annotation(camGL1, right_eye);
 				ShaderProgram *shader;
 				
-				//----------- Camera 1 ---------------
+				//Camera 1
 				//if (frame->format == CAMGL_RGB)
 				//{
 					//shader = shaderCamBlitRGB;
@@ -272,7 +391,7 @@ int main(int argc, char **argv)
 				glViewport(0, 0, 960, 1080);
 				SSQuad->draw();
 				
-				//------- Camera 2 ----------------
+				//Camera 2
 				//if (frame1->format == CAMGL_RGB)
 				//{
 					//shader = shaderCamBlitRGB;
@@ -304,7 +423,7 @@ int main(int argc, char **argv)
 				// ---- Debugging and Statistics ----
 		
 				numFrames++;
-				if (numFrames % 100 == 0)
+				if (numFrames % 200 == 0)
 				{ // Log FPS
 					auto currentTime = std::chrono::high_resolution_clock::now();
 					int elapsedMS = std::chrono::duration_cast<std::chrono::milliseconds>(currentTime - lastTime).count();
@@ -369,3 +488,5 @@ static void bindExternalTexture (GLuint adr, GLuint tex, int slot)
 	glBindTexture(GL_TEXTURE_EXTERNAL_OES, tex);
 	CHECK_GL();
 }
+
+
