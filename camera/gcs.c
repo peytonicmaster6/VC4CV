@@ -62,6 +62,7 @@ static void gcs_onCameraControl(MMAL_PORT_T *port, MMAL_BUFFER_HEADER_T *buffer)
 static void gcs_onCameraOutput(MMAL_PORT_T *port, MMAL_BUFFER_HEADER_T *buffer);
 // Watchdog callback for when no new camera frames are pushed for a while, indicating an error
 static void gcs_onWatchdogTrigger(void *context);
+//static void gcs_annotate(GCS *gcs, MMAL_COMPONENT_T *camera, const char *string);
 
 
 GCS *gcs_create(GCS_CameraParams *cameraParams)
@@ -84,14 +85,35 @@ GCS *gcs_create(GCS_CameraParams *cameraParams)
 	// Setup timers and callbacks for watchdog (resets whenever a frame is received)
 	vstatus = vcos_timer_create(&gcs->watchdogTimer, "gcs-watchdog-timer", gcs_onWatchdogTrigger, gcs);
 	CHECK_STATUS_V(vstatus, "Failed to create timer", error_timer);
-
+    
 	// Create MMAL camera component
 	mstatus = mmal_component_create(MMAL_COMPONENT_DEFAULT_CAMERA, &gcs->camera);
 	CHECK_STATUS_M(mstatus, "Failed to create camera", error_cameraCreate);
+	
 
-	// Set camera number
-	MMAL_PARAMETER_INT32_T camera_Num = {{MMAL_PARAMETER_CAMERA_NUM, sizeof(camera_Num)}, gcs->cameraParams.camera_num};
-        mmal_port_parameter_set(gcs->camera->control, &camera_Num.hdr);
+	//Set the camera number
+	MMAL_PARAMETER_INT32_T camera_Num= {{MMAL_PARAMETER_CAMERA_NUM, sizeof(camera_Num)}, gcs->cameraParams.camera_num};
+	mstatus = mmal_port_parameter_set(gcs->camera->control, &camera_Num.hdr);
+    
+	//Rotate camera (will need for the screen later on)
+	//mmal_port_parameter_set_uint32(gcs->camera->output[0], MMAL_PARAMETER_ROTATION, 90);
+    
+	//Set up stereo mode (works I think, but need to fix the encoding issue, get a 0x505 error code)
+	//MMAL_PARAMETER_STEREOSCOPIC_MODE_T stereo = { {MMAL_PARAMETER_STEREOSCOPIC_MODE, sizeof(stereo)},
+	//MMAL_STEREOSCOPIC_MODE_SIDE_BY_SIDE, MMAL_TRUE, MMAL_FALSE
+	//};
+	//mmal_port_parameter_set(gcs->camera->control, &stereo.hdr);
+    
+	//Set up stereo mode (works I think, but need to fix the encoding issue, get a 0x505 error code)
+	//MMAL_PARAMETER_STEREOSCOPIC_MODE_T stereo = { {MMAL_PARAMETER_STEREOSCOPIC_MODE, sizeof(stereo)},
+	//MMAL_STEREOSCOPIC_MODE_SIDE_BY_SIDE, MMAL_TRUE, MMAL_FALSE
+	//};
+	//mmal_port_parameter_set(gcs->camera->control, &stereo.hdr);
+    
+	if (mstatus != MMAL_SUCCESS)
+	{
+		vcos_log_error("Could not select camera : error %d", mstatus);
+	}
 	
 	// Mess with the ISP blocks
 	// https://www.raspberrypi.org/forums/viewtopic.php?f=43&t=175711
@@ -107,29 +129,41 @@ GCS *gcs_create(GCS_CameraParams *cameraParams)
 	if (gcs->cameraParams.iso != 0)
 		mmal_port_parameter_set_uint32(gcs->camera->control, MMAL_PARAMETER_ISO, (uint32_t)gcs->cameraParams.iso);
 	
-        //Control the brightness	
-	MMAL_RATIONAL_T value = {60, 100};                //default value is 50
+	//Control the brightness	
+	MMAL_RATIONAL_T value = {60, 100};
 	mmal_port_parameter_set_rational(gcs->camera->control, MMAL_PARAMETER_BRIGHTNESS, value);	
 	
-	/*if (gcs->cameraParams.disableEXP)
-	{ // Fix Exposure to set ISO value
-		MMAL_PARAMETER_EXPOSUREMODE_T expMode;
-		expMode.hdr.id = MMAL_PARAMETER_EXPOSURE_MODE;
-		expMode.hdr.size = sizeof(MMAL_PARAMETER_EXPOSUREMODE_T);
-		expMode.value = MMAL_PARAM_EXPOSUREMODE_OFF;
-		mmal_port_parameter_set(gcs->camera->control, &expMode.hdr);
-		int expComp = 0;
-		mmal_port_parameter_set_int32(gcs->camera->control, MMAL_PARAMETER_EXPOSURE_COMP, expComp);
+	/*//Annotate text (work in progess)
+	MMAL_PARAMETER_CAMERA_ANNOTATE_V4_T annotate =
+	{{MMAL_PARAMETER_ANNOTATE, sizeof(MMAL_PARAMETER_CAMERA_ANNOTATE_V4_T)}};
+    
+	const char *string = "this is just a test";
+	//annotate.string = string;
+	//time_t t = time(NULL);
+	//struct tm tm = *localtime(&t);
+	//char tmp[MMAL_CAMERA_ANNOTATE_MAX_TEXT_LEN_V3];
+	//int process_datetime = 1;
 
-	}
-	if (gcs->cameraParams.disableAWB)
-	{ // Fix AWB to constant 1,1 gain
-		MMAL_PARAMETER_AWBMODE_T awbMode = { { MMAL_PARAMETER_AWB_MODE, sizeof(awbMode) }, MMAL_PARAM_AWBMODE_SUNLIGHT };
-		mmal_port_parameter_set(gcs->camera->control, &awbMode.hdr);
-		MMAL_PARAMETER_AWB_GAINS_T awbGains = { { MMAL_PARAMETER_CUSTOM_AWB_GAINS, sizeof(awbGains) }, { 1, 1 }, { 1, 1 }};
-		mmal_port_parameter_set(gcs->camera->control, &awbGains.hdr);
-	}*/
-	
+	annotate.enable = 1;
+	annotate.enable_text_background = MMAL_TRUE;
+	//annotate.text_size = 64;
+	//annotate.show_frame_num = MMAL_TRUE;
+    
+	strncpy(annotate.text, string, MMAL_CAMERA_ANNOTATE_MAX_TEXT_LEN_V3);
+    
+    
+	annotate.custom_text_colour = MMAL_TRUE;
+	annotate.custom_text_Y = 0xffffff&0xff;
+	annotate.custom_text_U = (0xffffff>>8)&0xff;
+	annotate.custom_text_V = (0xffffff>>16)&0xff;
+    
+	annotate.custom_background_colour = MMAL_TRUE;
+	annotate.custom_background_Y = 0x29f06e&0xff;
+	annotate.custom_background_U = (0x29f06e>>8)&0xff;
+	annotate.custom_background_V = (0x29f06e>>16)&0xff;
+         
+	mmal_port_parameter_set(gcs->camera->control, &annotate.hdr);*/
+    
 	// Enable MMAL camera port
 	gcs->camera->control->userdata = (struct MMAL_PORT_USERDATA_T *)gcs;
 	mstatus = mmal_port_enable(gcs->camera->control, gcs_onCameraControl);
@@ -270,7 +304,7 @@ void gcs_stop(GCS *gcs)
 	}
 }
 
-/* Returns whether there is a new camera frame available */
+/*Returns whether there is a new camera frame available */
 uint8_t gcs_hasFrameBuffer(GCS *gcs)
 {
 	return gcs->curFrameBuffer != NULL;
@@ -283,7 +317,7 @@ void* gcs_requestFrameBuffer(GCS *gcs)
 	vcos_mutex_lock(&gcs->frameReadyMutex);
 	if (gcs->processingFrameBuffer)
 	{ // Not cleaned up last frame
-		LOG_ERROR("Not cleaned up last fraame!");
+		LOG_ERROR("Not cleaned up last frame!");
 		return NULL;
 	}
 	gcs->processingFrameBuffer = gcs->curFrameBuffer;
@@ -408,17 +442,24 @@ int gcs_annotate(GCS *gcs, const char *string)
     
     strncpy(annotate.text, string, MMAL_CAMERA_ANNOTATE_MAX_TEXT_LEN_V3);
     
-    //set the text color to apepar white on the blue background (also works for a black background)
+    
     annotate.custom_text_colour = MMAL_TRUE;
+    //annotate.custom_text_Y = 0xffffff&0xff;
+    //annotate.custom_text_U = (0xffffff>>8)&0xff;
+    //annotate.custom_text_V = (0xffffff>>16)&0xff;
+    
     annotate.custom_text_Y = 255;
     annotate.custom_text_U = 255;
     annotate.custom_text_V = 107;
     
-    //create a blue background for the text
     annotate.custom_background_colour = MMAL_TRUE;
-    annotate.custom_background_Y = 29;  //0   (for black)
-    annotate.custom_background_U = 255; //128 (for black)
-    annotate.custom_background_V = 107; //128 (for black)
+    //annotate.custom_background_Y = 0x29f06e&0xff;
+    //annotate.custom_background_U = (0x29f06e>>8)&0xff;
+    //annotate.custom_background_V = (0x29f06e>>16)&0xff;
+    
+    annotate.custom_background_Y = 29; //0 for black
+    annotate.custom_background_U = 255; //128 for black
+    annotate.custom_background_V = 107; //128 for black
          
     return mmal_port_parameter_set(gcs->camera->control, &annotate.hdr);
 	

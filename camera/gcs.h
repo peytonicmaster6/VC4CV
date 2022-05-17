@@ -64,7 +64,7 @@ void* gcs_getFrameBufferData(void *framebuffer);
 void gcs_returnFrameBuffer(GCS *gcs);
 
 int gcs_annotate(GCS *gcs, const char *string);
-	
+
 #ifdef __cplusplus
 }
 #endif
